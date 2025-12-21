@@ -49,6 +49,13 @@ local function removeHighlight(obj)
     end
 end
 
+local function clearAllHighlights()
+    for _,h in pairs(Highlights) do
+        if h then h:Destroy() end
+    end
+    table.clear(Highlights)
+end
+
 --==================================
 -- PLAYER ESP
 --==================================
@@ -62,6 +69,7 @@ task.spawn(function()
             and plr.Team
             and plr.Character
             and plr.Character:FindFirstChild("HumanoidRootPart") then
+
                 local teamName = string.lower(plr.Team.Name)
                 if teamName == "killer" then
                     addHighlight(plr.Character, Color3.fromRGB(255,0,0))
@@ -75,11 +83,12 @@ end)
 
 ESPTab:CreateToggle({
     Name = "Highlight Survivor & Killer",
+    CurrentValue = false,
     Callback = function(v)
         PlayerESPEnabled = v
         if not v then
             for obj,_ in pairs(Highlights) do
-                if Players:GetPlayerFromCharacter(obj) then
+                if obj:IsA("Model") and Players:GetPlayerFromCharacter(obj) then
                     removeHighlight(obj)
                 end
             end
@@ -108,10 +117,36 @@ local function toggleModelESP(name, color, enabled)
     end
 end
 
-ESPTab:CreateToggle({Name="Highlight Generator", Callback=function(v) toggleModelESP("Generator", Color3.fromRGB(255,255,0), v) end})
-ESPTab:CreateToggle({Name="Highlight Hook", Callback=function(v) toggleModelESP("Hook", Color3.fromRGB(255,0,255), v) end})
-ESPTab:CreateToggle({Name="Highlight Window", Callback=function(v) toggleModelESP("Window", Color3.fromRGB(0,170,255), v) end})
-ESPTab:CreateToggle({Name="Highlight Event (Gift)", Callback=function(v) toggleModelESP("Gift", Color3.fromRGB(255,140,0), v) end})
+--==================================
+-- OBJECT ESP TOGGLES (TIDAK SALING MATI)
+--==================================
+ESPTab:CreateToggle({
+    Name="Highlight Generator",
+    Callback=function(v)
+        toggleModelESP("Generator", Color3.fromRGB(255,255,0), v)
+    end
+})
+
+ESPTab:CreateToggle({
+    Name="Highlight Hook",
+    Callback=function(v)
+        toggleModelESP("Hook", Color3.fromRGB(255,0,255), v)
+    end
+})
+
+ESPTab:CreateToggle({
+    Name="Highlight Window",
+    Callback=function(v)
+        toggleModelESP("Window", Color3.fromRGB(0,170,255), v)
+    end
+})
+
+ESPTab:CreateToggle({
+    Name="Highlight Event (Gift)",
+    Callback=function(v)
+        toggleModelESP("Gift", Color3.fromRGB(255,140,0), v)
+    end
+})
 
 --==================================
 -- CROSSHAIR DOT
@@ -134,12 +169,15 @@ ESPTab:CreateToggle({
 
 RunService.RenderStepped:Connect(function()
     if CrosshairEnabled then
-        Crosshair.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+        Crosshair.Position = Vector2.new(
+            Camera.ViewportSize.X/2,
+            Camera.ViewportSize.Y/2
+        )
     end
 end)
 
 --==================================
--- PLAYER TAB
+-- PLAYER TAB (FIX TOTAL)
 --==================================
 local WalkSpeedEnabled = false
 local WalkSpeedValue = 16
@@ -158,12 +196,14 @@ WalkSpeedSlider = PlayerTab:CreateSlider({
 
 PlayerTab:CreateToggle({
     Name="Enable WalkSpeed",
+    CurrentValue=false,
     Callback=function(v)
         WalkSpeedEnabled = v
         WalkSpeedSlider:SetDisabled(not v)
     end
 })
 
+-- disable slider AFTER UI loaded (INI FIX TAB GA MUNCUL)
 task.defer(function()
     WalkSpeedSlider:SetDisabled(true)
 end)
@@ -176,54 +216,57 @@ RunService.Heartbeat:Connect(function()
 end)
 
 --==================================
--- PLAYER TAB: INVISIBLE (DITAMBAHKAN AMAN)
---==================================
-local InvisibleEnabled = false
-
-local function setInvisible(char, state)
-    for _,v in ipairs(char:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.LocalTransparencyModifier = state and 1 or 0
-            v.CanCollide = not state
-        elseif v:IsA("Decal") then
-            v.Transparency = state and 1 or 0
-        end
-    end
-end
-
-PlayerTab:CreateToggle({
-    Name = "Invisible (Non-Visual)",
-    Callback = function(v)
-        InvisibleEnabled = v
-        local char = LocalPlayer.Character
-        if char then
-            setInvisible(char, v)
-        end
-    end
-})
-
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
-    if InvisibleEnabled then
-        setInvisible(char, true)
-    end
-end)
-
---==================================
--- MISC
+-- MISC: CEK TEAM MAP
 --==================================
 MiscTab:CreateButton({
     Name="Cek Team (Map)",
     Callback=function()
         local teams = TeamsService:GetTeams()
         local result = "Team di map:\n"
-        for _,team in ipairs(teams) do
-            local count = 0
-            for _,plr in ipairs(Players:GetPlayers()) do
-                if plr.Team == team then count += 1 end
+        if #teams == 0 then
+            result = "Tidak ada TeamService"
+        else
+            for _,team in ipairs(teams) do
+                local count = 0
+                for _,plr in ipairs(Players:GetPlayers()) do
+                    if plr.Team == team then count += 1 end
+                end
+                result ..= "- "..team.Name.." : "..count.." player\n"
             end
-            result ..= "- "..team.Name.." : "..count.." player\n"
         end
         Rayfield:Notify({Title="Cek Team", Content=result, Duration=8})
+        print(result)
+    end
+})
+
+--==================================
+-- MISC: CEK MODEL DEKAT PLAYER
+--==================================
+MiscTab:CreateButton({
+    Name="Cek Model Sekitar (5 studs)",
+    Callback=function()
+        local char = LocalPlayer.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local found = {}
+        local result = "Model sekitar:\n"
+
+        for _,v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Model") and v.PrimaryPart then
+                local dist = (v.PrimaryPart.Position - hrp.Position).Magnitude
+                if dist <= 5 and not found[v.Name] then
+                    found[v.Name] = true
+                    result ..= "- "..v.Name.."\n"
+                end
+            end
+        end
+
+        if result == "Model sekitar:\n" then
+            result ..= "Tidak ada model"
+        end
+
+        Rayfield:Notify({Title="Cek Model", Content=result, Duration=8})
+        print(result)
     end
 })
