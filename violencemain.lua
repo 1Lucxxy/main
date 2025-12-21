@@ -180,38 +180,40 @@ end)
 -- PLAYER TAB (FIX TOTAL)
 --==================================
 local WalkSpeedEnabled = false
-local WalkSpeedValue = 16
-
-local WalkSpeedSlider
-WalkSpeedSlider = PlayerTab:CreateSlider({
-    Name="WalkSpeed",
-    Range={16,150},
-    Increment=1,
-    Suffix=" studs",
-    CurrentValue=WalkSpeedValue,
-    Callback=function(v)
-        WalkSpeedValue = v
-    end
-})
+local NORMAL_SPEED = 16
+local BOOST_SPEED  = 64
 
 PlayerTab:CreateToggle({
-    Name="Enable WalkSpeed",
-    CurrentValue=false,
-    Callback=function(v)
+    Name = "WalkSpeed (64)",
+    CurrentValue = false,
+    Callback = function(v)
         WalkSpeedEnabled = v
-        WalkSpeedSlider:SetDisabled(not v)
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.WalkSpeed = v and BOOST_SPEED or NORMAL_SPEED
+            end
+        end
     end
 })
 
--- disable slider AFTER UI loaded (INI FIX TAB GA MUNCUL)
-task.defer(function()
-    WalkSpeedSlider:SetDisabled(true)
-end)
-
+-- jaga biar ga di-reset game
 RunService.Heartbeat:Connect(function()
     if WalkSpeedEnabled and LocalPlayer.Character then
         local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = WalkSpeedValue end
+        if hum and hum.WalkSpeed ~= BOOST_SPEED then
+            hum.WalkSpeed = BOOST_SPEED
+        end
+    end
+end)
+
+-- reset ke normal saat respawn
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.3)
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = WalkSpeedEnabled and BOOST_SPEED or NORMAL_SPEED
     end
 end)
 
