@@ -16,17 +16,18 @@ local Camera = workspace.CurrentCamera
 -- WINDOW & TABS
 --==================================================
 local Window = Rayfield:CreateWindow({
-    Name = "ESP + Misc (NO KORBLOX)",
+    Name = "ESP + Player + Misc",
     LoadingTitle = "Loading",
     LoadingSubtitle = "Stable Version",
     ConfigurationSaving = { Enabled = false }
 })
 
-local ESPTab  = Window:CreateTab("ESP", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
+local ESPTab    = Window:CreateTab("ESP", 4483362458)
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local MiscTab   = Window:CreateTab("Misc", 4483362458)
 
 --==================================================
--- HIGHLIGHT CORE (FULL COLOR, NO OUTLINE)
+-- HIGHLIGHT CORE (FULL COLOR)
 --==================================================
 local Highlights = {}
 
@@ -72,14 +73,11 @@ local function updatePlayers()
 end
 
 task.spawn(function()
-    while task.wait(1) do
-        updatePlayers()
-    end
+    while task.wait(1) do updatePlayers() end
 end)
 
 ESPTab:CreateToggle({
     Name = "ESP Survivor & Killer",
-    CurrentValue = false,
     Callback = function(v)
         PlayerESPEnabled = v
         if not v then clearHighlights() end
@@ -87,14 +85,9 @@ ESPTab:CreateToggle({
 })
 
 --==================================================
--- OBJECT ESP (CACHE - ANTI LAG)
+-- OBJECT ESP (CACHE)
 --==================================================
-local ModelCache = {
-    Generator = {},
-    Hook = {},
-    Window = {},
-    Gift = {}
-}
+local ModelCache = { Generator={}, Hook={}, Window={}, Gift={} }
 
 for _,v in ipairs(workspace:GetDescendants()) do
     if v:IsA("Model") and ModelCache[v.Name] then
@@ -103,57 +96,24 @@ for _,v in ipairs(workspace:GetDescendants()) do
 end
 
 local function highlightCached(name, color)
-    for _,m in ipairs(ModelCache[name]) do
-        addHighlight(m, color)
-    end
+    for _,m in ipairs(ModelCache[name]) do addHighlight(m, color) end
 end
 
-ESPTab:CreateToggle({
-    Name = "Generator ESP",
-    Callback = function(v)
-        if v then
-            highlightCached("Generator", Color3.fromRGB(255,255,0))
-        else
-            clearHighlights()
-        end
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Hook ESP",
-    Callback = function(v)
-        if v then
-            highlightCached("Hook", Color3.fromRGB(255,0,255))
-        else
-            clearHighlights()
-        end
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Window ESP",
-    Callback = function(v)
-        if v then
-            highlightCached("Window", Color3.fromRGB(0,170,255))
-        else
-            clearHighlights()
-        end
-    end
-})
-
-ESPTab:CreateToggle({
-    Name = "Event / Gift ESP",
-    Callback = function(v)
-        if v then
-            highlightCached("Gift", Color3.fromRGB(255,165,0))
-        else
-            clearHighlights()
-        end
-    end
-})
+ESPTab:CreateToggle({ Name="Generator ESP", Callback=function(v)
+    if v then highlightCached("Generator", Color3.fromRGB(255,255,0)) else clearHighlights() end
+end})
+ESPTab:CreateToggle({ Name="Hook ESP", Callback=function(v)
+    if v then highlightCached("Hook", Color3.fromRGB(255,0,255)) else clearHighlights() end
+end})
+ESPTab:CreateToggle({ Name="Window ESP", Callback=function(v)
+    if v then highlightCached("Window", Color3.fromRGB(0,170,255)) else clearHighlights() end
+end})
+ESPTab:CreateToggle({ Name="Event / Gift ESP", Callback=function(v)
+    if v then highlightCached("Gift", Color3.fromRGB(255,165,0)) else clearHighlights() end
+end})
 
 --==================================================
--- CROSSHAIR DOT (TOGGLE)
+-- CROSSHAIR DOT
 --==================================================
 local CrosshairEnabled = false
 local Crosshair = Drawing.new("Circle")
@@ -180,6 +140,54 @@ RunService.RenderStepped:Connect(function()
 end)
 
 --==================================================
+-- PLAYER : WALKSPEED TOGGLE
+--==================================================
+local WalkSpeedEnabled = false
+local CustomWalkSpeed = 32 -- kamu bisa ganti nilainya
+
+local function applyWalkSpeed(char)
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+    hum.WalkSpeed = WalkSpeedEnabled and CustomWalkSpeed or 16
+end
+
+PlayerTab:CreateToggle({
+    Name = "WalkSpeed",
+    Callback = function(v)
+        WalkSpeedEnabled = v
+        applyWalkSpeed(LocalPlayer.Character)
+    end
+})
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(0.5)
+    applyWalkSpeed(char)
+end)
+
+--==================================================
+-- MISC : NOCLIP TOGGLE
+--==================================================
+local NoclipEnabled = false
+
+MiscTab:CreateToggle({
+    Name = "Noclip",
+    Callback = function(v)
+        NoclipEnabled = v
+    end
+})
+
+RunService.Stepped:Connect(function()
+    if not NoclipEnabled then return end
+    local char = LocalPlayer.Character
+    if not char then return end
+    for _,part in ipairs(char:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = false
+        end
+    end
+end)
+
+--==================================================
 -- MISC : CEK TEAM MAP
 --==================================================
 MiscTab:CreateButton({
@@ -189,17 +197,11 @@ MiscTab:CreateButton({
         for _,team in ipairs(TeamsService:GetTeams()) do
             local count = 0
             for _,plr in ipairs(Players:GetPlayers()) do
-                if plr.Team == team then
-                    count += 1
-                end
+                if plr.Team == team then count += 1 end
             end
             text ..= "- "..team.Name.." : "..count.." player\n"
         end
-        Rayfield:Notify({
-            Title = "Info Team",
-            Content = text,
-            Duration = 8
-        })
+        Rayfield:Notify({Title="Info Team",Content=text,Duration=8})
         print(text)
     end
 })
@@ -228,11 +230,7 @@ MiscTab:CreateButton({
             end
         end
 
-        Rayfield:Notify({
-            Title = "Model Nearby",
-            Content = text,
-            Duration = 8
-        })
+        Rayfield:Notify({Title="Model Nearby",Content=text,Duration=8})
         print(text)
     end
 })
