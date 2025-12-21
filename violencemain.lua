@@ -16,9 +16,9 @@ local Camera = workspace.CurrentCamera
 -- WINDOW & TABS
 --==================================
 local Window = Rayfield:CreateWindow({
-    Name = "ESP Highlight (Ultimate)",
+    Name = "ESP Highlight (Final)",
     LoadingTitle = "ESP System",
-    LoadingSubtitle = "Final + Debug Tools",
+    LoadingSubtitle = "Full Color • No Outline",
     ConfigurationSaving = { Enabled = false }
 })
 
@@ -26,19 +26,20 @@ local ESPTab  = Window:CreateTab("ESP", 4483362458)
 local MiscTab = Window:CreateTab("Misc", 4483362458)
 
 --==================================
--- HIGHLIGHT CORE
+-- HIGHLIGHT CORE (NO OUTLINE ✔)
 --==================================
 local Highlights = {}
 
 local function addHighlight(obj, color)
     if not obj or Highlights[obj] then return end
+
     local h = Instance.new("Highlight")
     h.Adornee = obj
     h.FillColor = color
     h.FillTransparency = 0.8
-    h.OutlineColor = Color3.new(0,0,0)
-    h.OutlineTransparency = 0.2
+    h.OutlineTransparency = 1 -- FULL COLOR (NO OUTLINE)
     h.Parent = obj
+
     Highlights[obj] = h
 end
 
@@ -50,7 +51,7 @@ local function clearHighlights()
 end
 
 --==================================
--- PLAYER ESP (TEAM BASED ✔)
+-- PLAYER ESP (TEAM BASED)
 --==================================
 local PlayerESPEnabled = false
 
@@ -90,7 +91,7 @@ ESPTab:CreateToggle({
 })
 
 --==================================
--- MODEL CACHE (ANTI FPS DROP)
+-- MODEL CACHE (ANTI LAG)
 --==================================
 local ModelCache = {
     Generator = {},
@@ -112,7 +113,7 @@ local function highlightCached(name, color)
 end
 
 --==================================
--- OBJECT ESP TOGGLES
+-- OBJECT ESP
 --==================================
 ESPTab:CreateToggle({
     Name = "Highlight Generator",
@@ -141,8 +142,11 @@ ESPTab:CreateToggle({
 ESPTab:CreateToggle({
     Name = "Highlight Event (Gift)",
     Callback = function(v)
-        if v then highlightCached("Gift", Color3.fromRGB(255,140,0))
-        else clearHighlights() end
+        if v then
+            highlightCached("Gift", Color3.fromRGB(255,165,0)) -- ORANGE
+        else
+            clearHighlights()
+        end
     end
 })
 
@@ -182,10 +186,10 @@ MiscTab:CreateButton({
     Name = "Cek Team (Map)",
     Callback = function()
         local teams = TeamsService:GetTeams()
-        local result = "Team di map ini:\n"
+        local result = "Team di map:\n"
 
         if #teams == 0 then
-            result = "Tidak ada TeamService di map ini"
+            result = "Tidak ada TeamService"
         else
             for _,team in ipairs(teams) do
                 local count = 0
@@ -204,7 +208,6 @@ MiscTab:CreateButton({
             Duration = 8
         })
 
-        print("===== TEAM MAP CHECK =====")
         print(result)
     end
 })
@@ -220,12 +223,11 @@ MiscTab:CreateButton({
         if not hrp then return end
 
         local found = {}
-        local result = "Model sekitar (5 studs):\n"
+        local result = "Model sekitar:\n"
 
         for _,v in ipairs(workspace:GetDescendants()) do
             if v:IsA("Model") and v.PrimaryPart then
-                local dist = (v.PrimaryPart.Position - hrp.Position).Magnitude
-                if dist <= 5 then
+                if (v.PrimaryPart.Position - hrp.Position).Magnitude <= 5 then
                     if not found[v.Name] then
                         found[v.Name] = true
                         result ..= "- " .. v.Name .. "\n"
@@ -234,17 +236,16 @@ MiscTab:CreateButton({
             end
         end
 
-        if result == "Model sekitar (5 studs):\n" then
+        if result == "Model sekitar:\n" then
             result ..= "Tidak ada model"
         end
 
         Rayfield:Notify({
-            Title = "Cek Model Sekitar",
+            Title = "Cek Model",
             Content = result,
             Duration = 8
         })
 
-        print("===== MODEL NEAR PLAYER =====")
         print(result)
     end
 })
