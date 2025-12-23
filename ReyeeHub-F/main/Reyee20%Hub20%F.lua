@@ -1,204 +1,72 @@
---// ORION LIBRARY
-local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/shlexware/Orion/main/source"))()
+-- Third Party Script Selector Executor
 
---// WINDOW
-local Window = OrionLib:MakeWindow({
-    Name = "Visual ESP",
-    HidePremium = false,
-    SaveConfig = false,
-    ConfigFolder = "VisualESP"
-})
-
---// SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
 
---// SETTINGS
-local Settings = {
-    Enabled = false,
+-- ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ScriptSelectorGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = PlayerGui
 
-    Box = false,
-    Line = false,
-    Name = false,
-    HealthBar = false,
+-- Main Frame
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 220)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -110)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 0
+Frame.Parent = ScreenGui
+Frame.Active = true
+Frame.Draggable = true
 
-    Color = Color3.fromRGB(255, 0, 0)
+Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 10)
+
+-- Title
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.BackgroundTransparency = 1
+Title.Text = "Select Script"
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Parent = Frame
+
+-- SCRIPT LIST (GANTI DI SINI)
+local Scripts = {
+    ["Violence District"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua"))()
+    end,
+
+    ["Script 2"] = function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/USERNAME/REPO/main/script2.lua"))()
+    end,
+
+    ["Script 3"] = function()
+        print("Script 3 jalan")
+        -- isi bebas
+    end
 }
 
---// DRAWING STORAGE
-local Drawings = {}
+-- Create Buttons
+local y = 50
+for name, callback in pairs(Scripts) do
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -20, 0, 40)
+    Button.Position = UDim2.new(0, 10, 0, y)
+    Button.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    Button.Text = name
+    Button.Font = Enum.Font.Gotham
+    Button.TextSize = 14
+    Button.TextColor3 = Color3.new(1,1,1)
+    Button.Parent = Frame
 
---// CLEAN
-local function ClearESP()
-    for _, d in pairs(Drawings) do
-        if d then
-            pcall(function()
-                d:Remove()
-            end)
-        end
-    end
-    table.clear(Drawings)
+    Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 8)
+
+    Button.MouseButton1Click:Connect(function()
+        pcall(callback)
+        ScreenGui:Destroy() -- GUI hilang setelah execute
+    end)
+
+    y = y + 50
 end
-
---// CREATE DRAWING
-local function New(type, props)
-    local d = Drawing.new(type)
-    for i, v in pairs(props) do
-        d[i] = v
-    end
-    table.insert(Drawings, d)
-    return d
-end
-
---// MAIN LOOP
-RunService.RenderStepped:Connect(function()
-    ClearESP()
-    if not Settings.Enabled then return end
-
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer
-        and plr.Character
-        and plr.Character:FindFirstChild("HumanoidRootPart")
-        and plr.Character:FindFirstChild("Humanoid") then
-
-            local hrp = plr.Character.HumanoidRootPart
-            local hum = plr.Character.Humanoid
-
-            local pos, onscreen = Camera:WorldToViewportPoint(hrp.Position)
-            if not onscreen then continue end
-
-            local screenPos = Vector2.new(pos.X, pos.Y)
-            local boxSize = Vector2.new(40, 60)
-
-            -- BOX
-            if Settings.Box then
-                New("Square", {
-                    Position = screenPos - boxSize / 2,
-                    Size = boxSize,
-                    Color = Settings.Color,
-                    Thickness = 2,
-                    Filled = false,
-                    Visible = true
-                })
-            end
-
-            -- LINE
-            if Settings.Line then
-                New("Line", {
-                    From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y),
-                    To = screenPos,
-                    Color = Settings.Color,
-                    Thickness = 2,
-                    Visible = true
-                })
-            end
-
-            -- NAME
-            if Settings.Name then
-                New("Text", {
-                    Text = plr.Name,
-                    Position = screenPos - Vector2.new(0, 35),
-                    Size = 16,
-                    Color = Settings.Color,
-                    Center = true,
-                    Outline = true,
-                    Visible = true
-                })
-            end
-
-            -- HEALTH BAR
-            if Settings.HealthBar then
-                local hp = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
-                local barHeight = boxSize.Y * hp
-
-                -- background
-                New("Square", {
-                    Position = screenPos + Vector2.new(-30, -boxSize.Y/2),
-                    Size = Vector2.new(4, boxSize.Y),
-                    Color = Color3.fromRGB(50,50,50),
-                    Filled = true,
-                    Visible = true
-                })
-
-                -- hp bar
-                New("Square", {
-                    Position = screenPos + Vector2.new(-30, boxSize.Y/2 - barHeight),
-                    Size = Vector2.new(4, barHeight),
-                    Color = Color3.fromRGB(0,255,0),
-                    Filled = true,
-                    Visible = true
-                })
-            end
-        end
-    end
-end)
-
---// VISUAL TAB
-local VisualTab = Window:MakeTab({
-    Name = "Visual",
-    Icon = "rbxassetid://4483345998",
-    PremiumOnly = false
-})
-
--- MASTER TOGGLE
-VisualTab:AddToggle({
-    Name = "Enable Visual ESP",
-    Default = false,
-    Callback = function(v)
-        Settings.Enabled = v
-        if not v then
-            ClearESP()
-        end
-    end
-})
-
-VisualTab:AddSeparator()
-
--- FEATURES
-VisualTab:AddToggle({
-    Name = "Box ESP",
-    Default = false,
-    Callback = function(v)
-        Settings.Box = v
-    end
-})
-
-VisualTab:AddToggle({
-    Name = "Line ESP",
-    Default = false,
-    Callback = function(v)
-        Settings.Line = v
-    end
-})
-
-VisualTab:AddToggle({
-    Name = "Name ESP",
-    Default = false,
-    Callback = function(v)
-        Settings.Name = v
-    end
-})
-
-VisualTab:AddToggle({
-    Name = "Health Bar",
-    Default = false,
-    Callback = function(v)
-        Settings.HealthBar = v
-    end
-})
-
-VisualTab:AddSeparator()
-
--- COLOR
-VisualTab:AddColorpicker({
-    Name = "ESP Color",
-    Default = Settings.Color,
-    Callback = function(v)
-        Settings.Color = v
-    end
-})
-
---// INIT
-OrionLib:Init()
