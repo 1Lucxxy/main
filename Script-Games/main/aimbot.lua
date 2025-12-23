@@ -7,150 +7,178 @@ local LocalPlayer = Players.LocalPlayer
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "Delta Visual SAFE",
-    LoadingTitle = "Visual Loading",
+    Name = "Delta Visual + Combat",
+    LoadingTitle = "Loading",
     LoadingSubtitle = "by dafaaa",
     ConfigurationSaving = { Enabled = false }
 })
 
 local VisualTab = Window:CreateTab("Visual", 4483362458)
+local CombatTab = Window:CreateTab("Combat", 4483362458)
 
--- SETTINGS
-local Settings = {
+-- ================= SETTINGS =================
+
+local Visual = {
     Enabled = false,
     TeamCheck = true,
     Color = Color3.fromRGB(255, 0, 0)
 }
 
+local Hitbox = {
+    Enabled = false,
+    Size = Vector3.new(6,6,6)
+}
+
 -- CACHE
-local Cache = {}
+local ESP = {}
+local HitboxCache = {}
 
 -- ================= UTILS =================
 
 local function IsEnemy(p)
-    if not Settings.TeamCheck then return true end
+    if not Visual.TeamCheck then return true end
     if not p.Team or not LocalPlayer.Team then return true end
     return p.Team ~= LocalPlayer.Team
 end
 
 local function ClearESP(p)
-    if Cache[p] then
-        for _,obj in pairs(Cache[p]) do
-            if typeof(obj) == "Instance" then
-                obj:Destroy()
+    if ESP[p] then
+        for _,v in pairs(ESP[p]) do
+            if typeof(v) == "Instance" then
+                v:Destroy()
             end
         end
-        Cache[p] = nil
+        ESP[p] = nil
     end
 end
 
-local function ClearAll()
+local function ClearAllESP()
     for _,p in pairs(Players:GetPlayers()) do
         ClearESP(p)
     end
 end
 
--- ================= APPLY ESP =================
+-- ================= VISUAL ESP =================
 
 local function ApplyESP(p)
-    if not Settings.Enabled then return end
+    if not Visual.Enabled then return end
     if p == LocalPlayer then return end
     if not IsEnemy(p) then return end
     if not p.Character then return end
 
     ClearESP(p)
-    Cache[p] = {}
+    ESP[p] = {}
 
     local char = p.Character
     local hrp = char:FindFirstChild("HumanoidRootPart")
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hrp or not hum or hum.Health <= 0 then return end
 
-    -- 🔴 HIGHLIGHT BODY
+    -- Highlight Body
     local hl = Instance.new("Highlight")
     hl.Adornee = char
     hl.Parent = CoreGui
-    hl.FillColor = Settings.Color
+    hl.FillColor = Visual.Color
     hl.FillTransparency = 0.8
     hl.OutlineTransparency = 1
     hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    Cache[p].Highlight = hl
+    ESP[p].Highlight = hl
 
-    -- 📦 BOX (SelectionBox)
-    local box = Instance.new("SelectionBox")
-    box.Adornee = char
-    box.Color3 = Settings.Color
-    box.LineThickness = 0.05
-    box.SurfaceTransparency = 1
-    box.Parent = char
-    Cache[p].Box = box
-
-    -- 🏷️ NAME + DISTANCE (BESAR)
+    -- Name + Distance (LEBIH KECIL)
     local gui = Instance.new("BillboardGui")
     gui.Adornee = hrp
-    gui.Size = UDim2.fromScale(6, 2.5)
-    gui.StudsOffset = Vector3.new(0, 4, 0)
+    gui.Size = UDim2.fromScale(3.5, 1.4)
+    gui.StudsOffset = Vector3.new(0, 3, 0)
     gui.AlwaysOnTop = true
     gui.Parent = CoreGui
-    Cache[p].Gui = gui
+    ESP[p].Gui = gui
 
     local txt = Instance.new("TextLabel")
     txt.BackgroundTransparency = 1
-    txt.Size = UDim2.fromScale(1, 1)
+    txt.Size = UDim2.fromScale(1,1)
+    txt.Font = Enum.Font.GothamBold
     txt.TextScaled = true
-    txt.Font = Enum.Font.GothamBlack
-    txt.TextStrokeTransparency = 0
-    txt.TextColor3 = Settings.Color
+    txt.TextStrokeTransparency = 0.4
+    txt.TextColor3 = Visual.Color
     txt.Parent = gui
-    Cache[p].Text = txt
+    ESP[p].Text = txt
 
-    -- LOOP UPDATE
     task.spawn(function()
-        while Settings.Enabled and hum.Health > 0 do
+        while Visual.Enabled and hum.Health > 0 do
             if not IsEnemy(p) then break end
-
-            local myChar = LocalPlayer.Character
-            local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            local myHRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not myHRP then break end
-
             local dist = math.floor((myHRP.Position - hrp.Position).Magnitude)
-            txt.Text = p.Name .. "\n[" .. dist .. "m]"
-
+            txt.Text = p.Name .. " [" .. dist .. "m]"
             task.wait(0.25)
         end
         ClearESP(p)
     end)
 end
 
--- ================= PLAYER HANDLER =================
+-- ================= HITBOX =================
+
+local function ClearHitbox(p)
+    if HitboxCache[p] then
+        HitboxCache[p]:Destroy()
+        HitboxCache[p] = nil
+    end
+end
+
+local function ApplyHitbox(p)
+    if not Hitbox.Enabled then return end
+    if p == LocalPlayer then return end
+    if not IsEnemy(p) then return end
+    if not p.Character then return end
+
+    ClearHitbox(p)
+
+    local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    hrp.Size = Hitbox.Size
+    hrp.Transparency = 0.5
+    hrp.BrickColor = BrickColor.new("Really red")
+    hrp.Material = Enum.Material.Neon
+    hrp.CanCollide = false
+
+    HitboxCache[p] = hrp
+end
+
+local function RefreshHitbox()
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then
+            ApplyHitbox(p)
+        end
+    end
+end
+
+-- ================= PLAYER EVENTS =================
 
 local function SetupPlayer(p)
     p.CharacterAdded:Connect(function()
         task.wait(0.4)
-        if Settings.Enabled then
-            ApplyESP(p)
-        end
+        if Visual.Enabled then ApplyESP(p) end
+        if Hitbox.Enabled then ApplyHitbox(p) end
     end)
-
-    if p.Character and Settings.Enabled then
-        ApplyESP(p)
-    end
 end
 
 for _,p in pairs(Players:GetPlayers()) do
     SetupPlayer(p)
 end
 
-Players.PlayerAdded:Connect(SetupPlayer)
-Players.PlayerRemoving:Connect(ClearESP)
+Players.PlayerRemoving:Connect(function(p)
+    ClearESP(p)
+    ClearHitbox(p)
+end)
 
 -- ================= UI =================
 
 VisualTab:CreateToggle({
-    Name = "Enable Highlight (MASTER)",
+    Name = "Enable Highlight",
     Callback = function(v)
-        Settings.Enabled = v
-        ClearAll()
+        Visual.Enabled = v
+        ClearAllESP()
         if v then
             for _,p in pairs(Players:GetPlayers()) do
                 ApplyESP(p)
@@ -163,9 +191,9 @@ VisualTab:CreateToggle({
     Name = "Team Check",
     CurrentValue = true,
     Callback = function(v)
-        Settings.TeamCheck = v
-        if Settings.Enabled then
-            ClearAll()
+        Visual.TeamCheck = v
+        ClearAllESP()
+        if Visual.Enabled then
             for _,p in pairs(Players:GetPlayers()) do
                 ApplyESP(p)
             end
@@ -174,12 +202,12 @@ VisualTab:CreateToggle({
 })
 
 VisualTab:CreateColorPicker({
-    Name = "ESP Color",
-    Color = Settings.Color,
+    Name = "Highlight Color",
+    Color = Visual.Color,
     Callback = function(c)
-        Settings.Color = c
-        ClearAll()
-        if Settings.Enabled then
+        Visual.Color = c
+        ClearAllESP()
+        if Visual.Enabled then
             for _,p in pairs(Players:GetPlayers()) do
                 ApplyESP(p)
             end
@@ -190,10 +218,31 @@ VisualTab:CreateColorPicker({
 VisualTab:CreateButton({
     Name = "Refresh Highlight",
     Callback = function()
-        if not Settings.Enabled then return end
-        ClearAll()
-        for _,p in pairs(Players:GetPlayers()) do
-            ApplyESP(p)
+        if Visual.Enabled then
+            ClearAllESP()
+            for _,p in pairs(Players:GetPlayers()) do
+                ApplyESP(p)
+            end
+        end
+    end
+})
+
+-- COMBAT TAB
+CombatTab:CreateToggle({
+    Name = "Hitbox Expander",
+    Callback = function(v)
+        Hitbox.Enabled = v
+        if not v then
+            for p,hrp in pairs(HitboxCache) do
+                if hrp then
+                    hrp.Size = Vector3.new(2,2,1)
+                    hrp.Transparency = 1
+                    hrp.Material = Enum.Material.Plastic
+                end
+            end
+            HitboxCache = {}
+        else
+            RefreshHitbox()
         end
     end
 })
