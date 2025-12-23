@@ -1,88 +1,268 @@
---========================================
--- SIMPLE TEXT MAP SELECTOR (RESET TOTAL)
---========================================
+--==================================
+-- RAYFIELD LOAD
+--==================================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
-local CoreGui = game:GetService("CoreGui")
+--==================================
+-- SERVICES
+--==================================
+local Players = game:GetService("Players")
+local TeamsService = game:GetService("Teams")
+local RunService = game:GetService("RunService")
 
--- hapus gui lama
-pcall(function()
-    CoreGui:FindFirstChild("MapSelectorGui"):Destroy()
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+--==================================
+-- WINDOW & TABS
+--==================================
+local Window = Rayfield:CreateWindow({
+    Name = "Violence District ESP",
+    LoadingTitle = "Violence District",
+    LoadingSubtitle = "ESP Loaded",
+    ConfigurationSaving = { Enabled = false }
+})
+
+local ESPTab    = Window:CreateTab("ESP", 4483362458)
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local MiscTab   = Window:CreateTab("Misc", 4483362458)
+
+--==================================
+-- HIGHLIGHT CORE
+--==================================
+local Highlights = {}
+
+local function addHighlight(obj, color)
+    if not obj or Highlights[obj] then return end
+    local h = Instance.new("Highlight")
+    h.Adornee = obj
+    h.FillColor = color
+    h.FillTransparency = 0.8
+    h.OutlineTransparency = 1
+    h.Parent = obj
+    Highlights[obj] = h
+end
+
+local function removeHighlight(obj)
+    if Highlights[obj] then
+        Highlights[obj]:Destroy()
+        Highlights[obj] = nil
+    end
+end
+
+--==================================
+-- PLAYER ESP (SURVIVOR / KILLER)
+--==================================
+local PlayerESPEnabled = false
+
+task.spawn(function()
+    while task.wait(1) do
+        if not PlayerESPEnabled then continue end
+
+        for _,plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer
+            and plr.Team
+            and plr.Character
+            and plr.Character:FindFirstChild("HumanoidRootPart") then
+
+                local team = string.lower(plr.Team.Name)
+                if team == "killer" then
+                    addHighlight(plr.Character, Color3.fromRGB(255,0,0))
+                elseif team == "survivors" then
+                    addHighlight(plr.Character, Color3.fromRGB(0,255,0))
+                end
+            end
+        end
+    end
 end)
 
---====================
--- GUI
---====================
-local gui = Instance.new("ScreenGui")
-gui.Name = "MapSelectorGui"
-gui.Parent = CoreGui
-gui.ResetOnSpawn = false
+ESPTab:CreateToggle({
+    Name = "Highlight Survivor & Killer",
+    Callback = function(v)
+        PlayerESPEnabled = v
+        if not v then
+            for obj,_ in pairs(Highlights) do
+                if Players:GetPlayerFromCharacter(obj) then
+                    removeHighlight(obj)
+                end
+            end
+        end
+    end
+})
 
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 260, 0, 200)
-frame.Position = UDim2.new(0.5, -130, 0.5, -100)
-frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
-frame.Active = true
-frame.Draggable = true
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,35)
-title.Text = "SELECT MAP"
-title.TextColor3 = Color3.new(1,1,1)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 14
-title.BackgroundTransparency = 1
-
-local list = Instance.new("Frame", frame)
-list.Position = UDim2.new(0,10,0,40)
-list.Size = UDim2.new(1,-20,1,-50)
-list.BackgroundTransparency = 1
-
-local layout = Instance.new("UIListLayout", list)
-layout.Padding = UDim.new(0,8)
-
---====================
--- MAP DATA (INI SAJA YANG DI EDIT)
---====================
-local Maps = {
-    ["MAP A"] = "https://raw.githubusercontent.com/USER/REPO/main/mapA.lua",
-    ["MAP B"] = "https://raw.githubusercontent.com/USER/REPO/main/mapB.lua",
-    ["MAP C"] = "https://raw.githubusercontent.com/USER/REPO/main/mapC.lua",
+--==================================
+-- OBJECT ESP CACHE
+--==================================
+local ModelCache = {
+    Generator = {},
+    Hook = {},
+    Window = {},
+    Gift = {}
 }
 
--- DEBUG (WAJIB ADA)
-print("MAP COUNT:", 0)
-for _ in pairs(Maps) do
-    print("MAP FOUND")
+for _,v in ipairs(workspace:GetDescendants()) do
+    if v:IsA("Model") and ModelCache[v.Name] then
+        table.insert(ModelCache[v.Name], v)
+    end
 end
 
---====================
--- BUAT TEXT BUTTON
---====================
-for mapName, mapUrl in pairs(Maps) do
-    local btn = Instance.new("TextButton", list)
-    btn.Size = UDim2.new(1,0,0,28)
-    btn.Text = mapName
-    btn.Font = Enum.Font.Gotham
-    btn.TextSize = 13
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    btn.TextColor3 = Color3.fromRGB(220,220,220)
-    btn.BackgroundTransparency = 1
-    btn.AutoButtonColor = false
+local function toggleModelESP(name, color, enabled)
+    for _,model in ipairs(ModelCache[name]) do
+        if enabled then
+            addHighlight(model, color)
+        else
+            removeHighlight(model)
+        end
+    end
+end
 
-    btn.MouseButton1Click:Connect(function()
-        -- CLOSE GUI DULU
-        gui:Destroy()
+--==================================
+-- OBJECT ESP TOGGLES
+--==================================
+ESPTab:CreateToggle({
+    Name="Highlight Generator",
+    Callback=function(v)
+        toggleModelESP("Generator", Color3.fromRGB(255,255,0), v)
+    end
+})
 
-        -- LOAD SCRIPT
-        task.spawn(function()
-            local ok, err = pcall(function()
-                local src = game:HttpGet(mapUrl)
-                loadstring(src)()
-            end)
+ESPTab:CreateToggle({
+    Name="Highlight Hook",
+    Callback=function(v)
+        toggleModelESP("Hook", Color3.fromRGB(255,0,255), v)
+    end
+})
 
-            if not ok then
-                warn("LOAD ERROR:", err)
+ESPTab:CreateToggle({
+    Name="Highlight Window",
+    Callback=function(v)
+        toggleModelESP("Window", Color3.fromRGB(0,170,255), v)
+    end
+})
+
+ESPTab:CreateToggle({
+    Name="Highlight Event (Gift)",
+    Callback=function(v)
+        toggleModelESP("Gift", Color3.fromRGB(255,140,0), v)
+    end
+})
+
+--==================================
+-- CROSSHAIR DOT
+--==================================
+local CrosshairEnabled = false
+local Crosshair = Drawing.new("Circle")
+Crosshair.Radius = 2
+Crosshair.Filled = true
+Crosshair.Thickness = 1
+Crosshair.Visible = false
+
+ESPTab:CreateToggle({
+    Name="Crosshair Dot",
+    Callback=function(v)
+        CrosshairEnabled = v
+        Crosshair.Visible = v
+    end
+})
+
+RunService.RenderStepped:Connect(function()
+    if CrosshairEnabled then
+        Crosshair.Position = Vector2.new(
+            Camera.ViewportSize.X/2,
+            Camera.ViewportSize.Y/2
+        )
+    end
+end)
+
+--==================================
+-- PLAYER TAB : WALKSPEED
+--==================================
+local WalkSpeedEnabled = false
+local WalkSpeedValue = 16
+
+local WalkSpeedSlider = PlayerTab:CreateSlider({
+    Name="WalkSpeed",
+    Range={16,150},
+    Increment=1,
+    CurrentValue=WalkSpeedValue,
+    Callback=function(v)
+        WalkSpeedValue = v
+    end
+})
+
+PlayerTab:CreateToggle({
+    Name="Enable WalkSpeed",
+    Callback=function(v)
+        WalkSpeedEnabled = v
+        WalkSpeedSlider:SetDisabled(not v)
+    end
+})
+
+task.defer(function()
+    WalkSpeedSlider:SetDisabled(true)
+end)
+
+RunService.Heartbeat:Connect(function()
+    if WalkSpeedEnabled then
+        local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = WalkSpeedValue
+        end
+    end
+end)
+
+--==================================
+-- MISC : CEK TEAM MAP
+--==================================
+MiscTab:CreateButton({
+    Name="Cek Team (Map)",
+    Callback=function()
+        local result = "Team di map:\n"
+        for _,team in ipairs(TeamsService:GetTeams()) do
+            local count = 0
+            for _,plr in ipairs(Players:GetPlayers()) do
+                if plr.Team == team then count += 1 end
             end
-        end)
-    end)
-end
+            result ..= "- "..team.Name.." : "..count.." player\n"
+        end
+
+        Rayfield:Notify({
+            Title="Violence District",
+            Content=result,
+            Duration=8
+        })
+    end
+})
+
+--==================================
+-- MISC : CEK MODEL DEKAT PLAYER
+--==================================
+MiscTab:CreateButton({
+    Name="Cek Model Sekitar (5 studs)",
+    Callback=function()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local found = {}
+        local result = "Model sekitar:\n"
+
+        for _,v in ipairs(workspace:GetDescendants()) do
+            if v:IsA("Model") and v.PrimaryPart then
+                if (v.PrimaryPart.Position - hrp.Position).Magnitude <= 5 and not found[v.Name] then
+                    found[v.Name] = true
+                    result ..= "- "..v.Name.."\n"
+                end
+            end
+        end
+
+        if result == "Model sekitar:\n" then
+            result ..= "Tidak ada model"
+        end
+
+        Rayfield:Notify({
+            Title="Cek Model",
+            Content=result,
+            Duration=8
+        })
+    end
+})
