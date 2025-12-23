@@ -42,8 +42,8 @@ local Maps = {
         url = "https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua"
     },
     {
-        name = "Aimbot",
-        url = "https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/aimbot.lua"
+        name = "Tess",
+        url = "https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua"
     },
     {
         name = "Map 3",
