@@ -4,9 +4,9 @@ local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 --// Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
-local Mouse = LocalPlayer:GetMouse()
 
 --// Settings
 local Settings = {
@@ -18,16 +18,14 @@ local Settings = {
     FOV = 150,
     Smoothness = 0.15,
     TargetPart = "Head",
-    Priority = "Closest Crosshair",
-
-    Hitbox = false,
-    HitboxSize = 6
+    Priority = "Closest Crosshair"
 }
 
---// FOV Circle
+--// FOV CIRCLE (FIXED)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = true
-FOVCircle.Thickness = 1.5
+FOVCircle.Radius = Settings.FOV
+FOVCircle.Thickness = 2
 FOVCircle.NumSides = 100
 FOVCircle.Filled = false
 FOVCircle.Color = Color3.fromRGB(0,255,0)
@@ -35,9 +33,9 @@ FOVCircle.Transparency = 1
 
 --// UI
 local Window = Rayfield:CreateWindow({
-    Name = "Rayfield Combat System",
+    Name = "Rayfield Combat FIXED",
     LoadingTitle = "Loading",
-    LoadingSubtitle = "Aimbot + Hitbox",
+    LoadingSubtitle = "Bug Fixed",
     ConfigurationSaving = {Enabled = false}
 })
 
@@ -58,18 +56,15 @@ CombatTab:CreateToggle({
     Callback = function(v) Settings.POVLock = v end
 })
 
-CombatTab:CreateToggle({
-    Name = "Team Check",
-    CurrentValue = true,
-    Callback = function(v) Settings.TeamCheck = v end
-})
-
 CombatTab:CreateSlider({
     Name = "FOV",
     Range = {50,500},
     Increment = 10,
     CurrentValue = 150,
-    Callback = function(v) Settings.FOV = v end
+    Callback = function(v)
+        Settings.FOV = v
+        FOVCircle.Radius = v
+    end
 })
 
 CombatTab:CreateSlider({
@@ -80,48 +75,21 @@ CombatTab:CreateSlider({
     Callback = function(v) Settings.Smoothness = v end
 })
 
-CombatTab:CreateDropdown({
-    Name = "Target Part",
-    Options = {"Head","HumanoidRootPart"},
-    CurrentOption = "Head",
-    Callback = function(v) Settings.TargetPart = v end
-})
-
-CombatTab:CreateDropdown({
-    Name = "Target Priority",
-    Options = {"Closest Crosshair","Closest Distance","Lowest Health"},
-    CurrentOption = "Closest Crosshair",
-    Callback = function(v) Settings.Priority = v end
-})
-
---// HITBOX TAB
-local HitboxTab = Window:CreateTab("Hitbox", 4483362458)
-
-HitboxTab:CreateToggle({
-    Name = "Hitbox Extender",
-    Callback = function(v) Settings.Hitbox = v end
-})
-
-HitboxTab:CreateSlider({
-    Name = "Hitbox Size",
-    Range = {2,15},
-    Increment = 1,
-    CurrentValue = 6,
-    Callback = function(v) Settings.HitboxSize = v end
-})
-
---// Utility
+--// TARGET CHECK
 local function ValidTarget(plr)
     if plr == LocalPlayer then return false end
     if Settings.TeamCheck and plr.Team == LocalPlayer.Team then return false end
     if not plr.Character then return false end
+
     local hum = plr.Character:FindFirstChild("Humanoid")
     local part = plr.Character:FindFirstChild(Settings.TargetPart)
     return hum and hum.Health > 0 and part
 end
 
+--// GET TARGET
 local function GetTarget()
-    local best, bestValue = nil, math.huge
+    local best, bestVal = nil, math.huge
+    local mousePos = UserInputService:GetMouseLocation()
 
     for _,plr in pairs(Players:GetPlayers()) do
         if ValidTarget(plr) then
@@ -129,72 +97,47 @@ local function GetTarget()
             local pos, onScreen = Camera:WorldToViewportPoint(part.Position)
             if not onScreen then continue end
 
-            local crossDist = (Vector2.new(pos.X,pos.Y)-Vector2.new(Mouse.X,Mouse.Y)).Magnitude
-            if crossDist > Settings.FOV then continue end
+            local dist = (Vector2.new(pos.X,pos.Y) - mousePos).Magnitude
+            if dist > Settings.FOV then continue end
 
-            local value =
-                Settings.Priority == "Closest Crosshair" and crossDist or
-                Settings.Priority == "Closest Distance" and
-                (Camera.CFrame.Position-part.Position).Magnitude or
-                plr.Character.Humanoid.Health
-
-            if value < bestValue then
-                bestValue = value
+            if dist < bestVal then
+                bestVal = dist
                 best = part
             end
         end
     end
-
     return best
 end
 
---// Silent Aim
+--// SILENT AIM (ONLY RAY)
 local old
 old = hookmetamethod(game,"__namecall",function(self,...)
     local args = {...}
     if Settings.SilentAim and getnamecallmethod()=="FindPartOnRayWithIgnoreList" then
-        local target = GetTarget()
-        if target then
-            args[1] = Ray.new(Camera.CFrame.Position,(target.Position-Camera.CFrame.Position).Unit*1000)
+        local t = GetTarget()
+        if t then
+            args[1] = Ray.new(Camera.CFrame.Position,(t.Position-Camera.CFrame.Position).Unit*1000)
             return old(self,unpack(args))
         end
     end
     return old(self,...)
 end)
 
---// Render
+--// RENDER LOOP (FIXED)
 RunService.RenderStepped:Connect(function()
-    FOVCircle.Radius = Settings.FOV
-    FOVCircle.Position = Vector2.new(Mouse.X,Mouse.Y)
+    local mousePos = UserInputService:GetMouseLocation()
+    FOVCircle.Position = mousePos
 
-    if Settings.Aimbot then
-        local t = GetTarget()
-        if t then
-            Camera.CFrame = Camera.CFrame:Lerp(
-                CFrame.new(Camera.CFrame.Position,t.Position),
-                Settings.Smoothness
-            )
-        end
+    local target = GetTarget()
+
+    -- AIMBOT WORK EVEN IF SILENT AIM ON
+    if Settings.Aimbot and target then
+        local cf = CFrame.new(Camera.CFrame.Position, target.Position)
+        Camera.CFrame = Camera.CFrame:Lerp(cf, Settings.Smoothness)
     end
 
-    if Settings.POVLock then
-        local t = GetTarget()
-        if t then
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position,t.Position)
-        end
-    end
-
-    -- Hitbox Extender
-    for _,plr in pairs(Players:GetPlayers()) do
-        if ValidTarget(plr) then
-            local root = plr.Character:FindFirstChild("HumanoidRootPart")
-            if root then
-                root.Size = Settings.Hitbox and
-                    Vector3.new(Settings.HitboxSize,Settings.HitboxSize,Settings.HitboxSize)
-                    or Vector3.new(2,2,1)
-                root.Transparency = Settings.Hitbox and 0.5 or 1
-                root.CanCollide = false
-            end
-        end
+    -- POV LOCK FORCE
+    if Settings.POVLock and target then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
     end
 end)
