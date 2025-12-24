@@ -50,6 +50,12 @@ Layout.Parent = Scroll
 -- SCRIPT LIST (TAMBAH DI SINI)
 local Scripts = {
     {
+        Name = "Fly",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
+        end
+    },
+    {
         Name = "Violence District",
         Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua"))()
@@ -71,6 +77,12 @@ local Scripts = {
         Name = "Gunung",
         Callback = function()
             loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
+        end
+    },
+    {
+        Name = "AimbotToggle",
+        Callback = function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/toggleaimbot.lua"))()
         end
     },
     {
