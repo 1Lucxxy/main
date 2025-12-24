@@ -102,7 +102,7 @@ local Scripts = {
         Callback = function()
             loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
         end
-    },
+    }
 }
 
 -- Create Buttons
