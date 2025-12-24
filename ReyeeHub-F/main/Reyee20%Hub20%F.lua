@@ -6,7 +6,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FayySelector GUI"
+ScreenGui.Name = "ScriptSelectorGUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
@@ -52,19 +52,7 @@ local Scripts = {
     {
         Name = "Violence District",
         Callback = function()
-            https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua
-        end
-    },
-    {
-        Name = "Combat",
-        Callback = function()
-            loadstring(game:HttpGet("https://pastefy.app/CZWxFoTG/raw"))()
-        end
-    },
-    {
-        Name = "Gunung",
-        Callback = function()
-            loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/violencedistrict.lua"))()
         end
     },
     {
@@ -86,21 +74,9 @@ local Scripts = {
         end
     },
     {
-        Name = "Gunung",
+        Name = "Combat",
         Callback = function()
-            loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
-        end
-    },
-    {
-        Name = "Gunung",
-        Callback = function()
-            loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
-        end
-    },
-    {
-        Name = "Gunung",
-        Callback = function()
-            loadstring(game:HttpGet("https://bantaigunung.my.id/script/BantaiXmarV.lua"))()
+            loadstring(game:HttpGet("https://pastefy.app/CZWxFoTG/raw"))()
         end
     }
 }
