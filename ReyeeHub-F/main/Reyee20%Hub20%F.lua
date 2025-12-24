@@ -6,7 +6,7 @@ local PlayerGui = Player:WaitForChild("PlayerGui")
 
 -- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FayySelector /\ GUI"
+ScreenGui.Name = "FayySelector GUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = PlayerGui
 
