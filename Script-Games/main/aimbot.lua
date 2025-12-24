@@ -9,7 +9,7 @@ local vim = game:GetService("VirtualInputManager")
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "Lucxx Hub V2 Full",
-    LoadingTitle = "FeyyHub",
+    LoadingTitle = "LHub",
     LoadingSubtitle = "by Lucxxy",
     ConfigurationSaving = {
         Enabled = true,
@@ -19,16 +19,11 @@ local Window = Rayfield:CreateWindow({
     Discord = { Enabled = false }
 })
 
--- // Tabs
--- Tambahkan tab dummy supaya Rayfield GUI muncul, tapi kosong
-local DummyTab = Window:CreateTab("Home", 4483362458)
-DummyTab:CreateLabel({ Name = "Welcome", Text = "Lucxx Hub V2 Full" })
-
--- Combat Tab
+-- // Combat Tab
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 
 -- ======================================================
--- COMBAT TAB
+-- VARIABLES
 -- ======================================================
 local TeamCheck = false
 local AimLockEnabled = false
@@ -36,8 +31,8 @@ local WallCheckEnabled = false
 local TracerEnabled = false
 local FOVRadius = 100
 local AimlockRange = 200
-
 local screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+local DrawingESP = {}
 
 -- POV Circle
 local FOVCircle = Drawing.new("Circle")
@@ -48,15 +43,18 @@ FOVCircle.Filled = false
 FOVCircle.Color = Color3.fromRGB(0,255,0)
 FOVCircle.Visible = false
 
+-- ======================================================
+-- Combat Tab UI
+-- ======================================================
 CombatTab:CreateSlider({
     Name = "FOV Circle Radius",
     Range = {100,300},
     Increment = 1,
-    CurrentValue = 100,
+    CurrentValue = FOVRadius,
     Callback = function(Value)
         FOVRadius = Value
         FOVCircle.Radius = Value
-    end,
+    end
 })
 
 CombatTab:CreateToggle({
@@ -92,16 +90,12 @@ CombatTab:CreateSlider({
     Increment = 10,
     Suffix = "Studs",
     CurrentValue = AimlockRange,
-    Callback = function(Value)
-        AimlockRange = Value
-    end
+    Callback = function(Value) AimlockRange = Value end
 })
 
 -- ======================================================
 -- MAIN LOOP
 -- ======================================================
-local DrawingESP = {}
-
 RunService.RenderStepped:Connect(function()
     screenCenter = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
     FOVCircle.Position = screenCenter
