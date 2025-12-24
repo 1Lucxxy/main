@@ -106,6 +106,43 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
+local dragging, dragStart, startPos
+local guiLocked = false
+local lastTapTime = 0
+local doubleTapDelay = 0.3 -- 0.3 detik untuk double tap
 
+-- Drag logic
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        local currentTime = tick()
+        
+        -- Double-tap detection untuk lock/unlock GUI
+        if currentTime - lastTapTime <= doubleTapDelay then
+            guiLocked = not guiLocked
+            lastTapTime = 0
+            return
+        else
+            lastTapTime = currentTime
+        end
+        
+        if not guiLocked then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end
+end)
 
-      
+button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if not guiLocked and dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
