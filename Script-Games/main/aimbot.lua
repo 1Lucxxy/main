@@ -8,11 +8,10 @@ local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
---// Settings
+--// SETTINGS
 local Settings = {
     Aimbot = false,
-    SilentAim = false,
-    POVLock = false,
+    POVTarget = false,
     TeamCheck = true,
 
     FOV = 150,
@@ -21,21 +20,21 @@ local Settings = {
     Priority = "Closest Crosshair"
 }
 
---// FOV CIRCLE (FIXED)
+--// POV / FOV CIRCLE (100% FORCE SHOW)
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = true
-FOVCircle.Radius = Settings.FOV
+FOVCircle.Filled = false
 FOVCircle.Thickness = 2
 FOVCircle.NumSides = 100
-FOVCircle.Filled = false
 FOVCircle.Color = Color3.fromRGB(0,255,0)
 FOVCircle.Transparency = 1
+FOVCircle.Radius = Settings.FOV
 
 --// UI
 local Window = Rayfield:CreateWindow({
-    Name = "Rayfield Combat FIXED",
+    Name = "Rayfield Combat FIX",
     LoadingTitle = "Loading",
-    LoadingSubtitle = "Bug Fixed",
+    LoadingSubtitle = "POV Fixed",
     ConfigurationSaving = {Enabled = false}
 })
 
@@ -43,21 +42,20 @@ local CombatTab = Window:CreateTab("Combat", 4483362458)
 
 CombatTab:CreateToggle({
     Name = "Aimbot",
-    Callback = function(v) Settings.Aimbot = v end
+    Callback = function(v)
+        Settings.Aimbot = v
+    end
 })
 
 CombatTab:CreateToggle({
-    Name = "Silent Aim",
-    Callback = function(v) Settings.SilentAim = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "POV Lock",
-    Callback = function(v) Settings.POVLock = v end
+    Name = "POV Target (Enable Targeting)",
+    Callback = function(v)
+        Settings.POVTarget = v
+    end
 })
 
 CombatTab:CreateSlider({
-    Name = "FOV",
+    Name = "FOV Radius",
     Range = {50,500},
     Increment = 10,
     CurrentValue = 150,
@@ -72,10 +70,34 @@ CombatTab:CreateSlider({
     Range = {0,1},
     Increment = 0.05,
     CurrentValue = 0.15,
-    Callback = function(v) Settings.Smoothness = v end
+    Callback = function(v)
+        Settings.Smoothness = v
+    end
 })
 
---// TARGET CHECK
+CombatTab:CreateDropdown({
+    Name = "Target Part (Active only if POV Target ON)",
+    Options = {"Head","HumanoidRootPart"},
+    CurrentOption = "Head",
+    Callback = function(v)
+        if Settings.POVTarget then
+            Settings.TargetPart = v
+        end
+    end
+})
+
+CombatTab:CreateDropdown({
+    Name = "Target Priority (Active only if POV Target ON)",
+    Options = {"Closest Crosshair","Closest Distance","Lowest Health"},
+    CurrentOption = "Closest Crosshair",
+    Callback = function(v)
+        if Settings.POVTarget then
+            Settings.Priority = v
+        end
+    end
+})
+
+--// VALID TARGET CHECK
 local function ValidTarget(plr)
     if plr == LocalPlayer then return false end
     if Settings.TeamCheck and plr.Team == LocalPlayer.Team then return false end
@@ -86,8 +108,10 @@ local function ValidTarget(plr)
     return hum and hum.Health > 0 and part
 end
 
---// GET TARGET
+--// GET TARGET (ONLY IF POVTarget ON)
 local function GetTarget()
+    if not Settings.POVTarget then return nil end
+
     local best, bestVal = nil, math.huge
     local mousePos = UserInputService:GetMouseLocation()
 
@@ -100,44 +124,34 @@ local function GetTarget()
             local dist = (Vector2.new(pos.X,pos.Y) - mousePos).Magnitude
             if dist > Settings.FOV then continue end
 
-            if dist < bestVal then
-                bestVal = dist
+            local value = dist
+            if Settings.Priority == "Closest Distance" then
+                value = (Camera.CFrame.Position - part.Position).Magnitude
+            elseif Settings.Priority == "Lowest Health" then
+                value = plr.Character.Humanoid.Health
+            end
+
+            if value < bestVal then
+                bestVal = value
                 best = part
             end
         end
     end
+
     return best
 end
 
---// SILENT AIM (ONLY RAY)
-local old
-old = hookmetamethod(game,"__namecall",function(self,...)
-    local args = {...}
-    if Settings.SilentAim and getnamecallmethod()=="FindPartOnRayWithIgnoreList" then
-        local t = GetTarget()
-        if t then
-            args[1] = Ray.new(Camera.CFrame.Position,(t.Position-Camera.CFrame.Position).Unit*1000)
-            return old(self,unpack(args))
-        end
-    end
-    return old(self,...)
-end)
-
---// RENDER LOOP (FIXED)
+--// RENDER LOOP (FIX POV CIRCLE)
 RunService.RenderStepped:Connect(function()
     local mousePos = UserInputService:GetMouseLocation()
     FOVCircle.Position = mousePos
+    FOVCircle.Visible = true -- FORCE
 
-    local target = GetTarget()
-
-    -- AIMBOT WORK EVEN IF SILENT AIM ON
-    if Settings.Aimbot and target then
-        local cf = CFrame.new(Camera.CFrame.Position, target.Position)
-        Camera.CFrame = Camera.CFrame:Lerp(cf, Settings.Smoothness)
-    end
-
-    -- POV LOCK FORCE
-    if Settings.POVLock and target then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+    if Settings.Aimbot then
+        local target = GetTarget()
+        if target then
+            local aimCF = CFrame.new(Camera.CFrame.Position, target.Position)
+            Camera.CFrame = Camera.CFrame:Lerp(aimCF, Settings.Smoothness)
+        end
     end
 end)
