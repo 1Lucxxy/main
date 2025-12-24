@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local GuiService = game:GetService("GuiService")
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 
 local camlockState = false
@@ -71,23 +72,41 @@ local button = Instance.new("TextButton")
 button.Size = UDim2.new(0, 124, 0, 44)
 button.Position = UDim2.new(0, 58, 0, 6)
 button.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- hitam
-button.BackgroundTransparency = 0.8 -- visibility 0.8
+button.BackgroundTransparency = 0.8
 button.Text = "Toggle Aimbot"
-button.TextColor3 = Color3.new(1, 1, 1) -- putih default
+button.TextColor3 = Color3.fromRGB(255,255,255) -- tetap putih
 button.Font = Enum.Font.GothamBold
 button.TextSize = 18
 button.TextXAlignment = Enum.TextXAlignment.Left
 button.Parent = frame
 
--- Toggle Aimbot
+-- Notification function
+local function notify(message)
+    local notif = Instance.new("TextLabel")
+    notif.Size = UDim2.new(0, 200, 0, 40)
+    notif.Position = UDim2.new(0.5, -100, 0.2, 0)
+    notif.BackgroundColor3 = Color3.fromRGB(21,21,21)
+    notif.BackgroundTransparency = 0.15
+    notif.TextColor3 = Color3.fromRGB(255,255,255)
+    notif.Text = message
+    notif.TextScaled = true
+    notif.Font = Enum.Font.GothamBold
+    notif.Parent = gui
+
+    local tween = TweenService:Create(notif, TweenInfo.new(1.5), {BackgroundTransparency = 1, TextTransparency = 1})
+    tween:Play()
+    tween.Completed:Connect(function()
+        notif:Destroy()
+    end)
+end
+
+-- Toggle Aimbot (tidak mengubah warna tombol)
 local function toggle()
     camlockState = not camlockState
     if camlockState then
         enemy = FindNearestEnemy()
-        button.TextColor3 = Color3.fromRGB(0, 255, 0) -- hijau ketika aktif
     else
         enemy = nil
-        button.TextColor3 = Color3.fromRGB(255, 255, 255) -- putih ketika mati
     end
 end
 
@@ -110,11 +129,16 @@ button.InputBegan:Connect(function(input)
         if currentTime - lastTapTime <= doubleTapDelay then
             guiLocked = not guiLocked
             lastTapTime = 0
+            if guiLocked then
+                notify("GUI Locked")
+            else
+                notify("GUI Unlocked")
+            end
             return
         else
             lastTapTime = currentTime
         end
-        
+
         if not guiLocked then
             dragging = true
             dragStart = input.Position
