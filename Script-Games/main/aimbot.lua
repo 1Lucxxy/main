@@ -1,74 +1,69 @@
--- Load Rayfield (pastikan URL bisa diakses dari executor mu)
+-- Pastikan kamu sudah punya Rayfield di workspace atau via loadstring
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Rayfield/main/source'))()
 
--- Membuat Window
+-- Membuat GUI
 local Window = Rayfield:CreateWindow({
-    Name = "Camera Follow Script",
-    LoadingTitle = "Camera Follow",
-    LoadingSubtitle = "by Dafaaa",
-    ConfigurationSaving = {
-       Enabled = true,
-       FolderName = nil,
-       FileName = "CameraFollowConfig"
-    },
-    Discord = {
-       Enabled = false,
-    },
-    KeySystem = false
+   Name = "Basic GUI",
+   LoadingTitle = "Rayfield Basic GUI",
+   LoadingSubtitle = "by ChatGPT",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "RayfieldConfigs", -- folder untuk save config
+      FileName = "BasicConfig"
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false
 })
 
--- Tab Camera
-local CameraTab = Window:CreateTab("Camera", 4483362458)
+-- Membuat Tab
+local MainTab = Window:CreateTab("Main", 4483362458) -- ID icon opsional
 
--- Variables
-local CameraFollowToggle = false
-local TargetPlayerName = nil
-local SmoothSpeed = 0.1 -- semkin kecil semakin smooth
+-- Membuat Section
+local MainSection = MainTab:CreateSection("Basic Section")
 
--- Input untuk nama player target
-CameraTab:CreateInput({
-    Name = "Target Player",
-    PlaceholderText = "Masukkan nama player",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(Value)
-        TargetPlayerName = Value
-    end
-})
-
--- Toggle untuk mengaktifkan camera follow
-CameraTab:CreateToggle({
-    Name = "Follow Player",
+-- Membuat Toggle
+MainTab:CreateToggle({
+    Name = "Example Toggle",
     CurrentValue = false,
-    Flag = "FollowToggle",
-    Callback = function(Value)
-        CameraFollowToggle = Value
-        if not Value then
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom -- reset camera
-        end
+    Flag = "ExampleToggle",
+    Callback = function(value)
+        print("Toggle state:", value)
     end
 })
 
--- Loop untuk update camera setiap frame
-game:GetService("RunService").RenderStepped:Connect(function(delta)
-    if CameraFollowToggle and TargetPlayerName then
-        local targetPlayer = game.Players:FindFirstChild(TargetPlayerName)
-        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local cam = workspace.CurrentCamera
-            cam.CameraType = Enum.CameraType.Scriptable
-
-            -- Smooth CFrame
-            local targetPos = targetPlayer.Character.HumanoidRootPart.Position
-            local currentPos = cam.CFrame.Position
-            local direction = (targetPos - currentPos)
-            local newPos = currentPos + direction * SmoothSpeed
-            cam.CFrame = CFrame.new(newPos, targetPos)
-        else
-            workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
-        end
-    else
-        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+-- Membuat Button
+MainTab:CreateButton({
+    Name = "Example Button",
+    Callback = function()
+        print("Button clicked!")
     end
-end)
+})
 
--- Optional: Label untuk test GUI muncul
-CameraTab:CreateLabel("GUI aktif ✅")
+-- Membuat Slider
+MainTab:CreateSlider({
+    Name = "Example Slider",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = "%",
+    CurrentValue = 50,
+    Flag = "ExampleSlider",
+    Callback = function(value)
+        print("Slider value:", value)
+    end
+})
+
+-- Membuat Label
+MainTab:CreateLabel("This is a basic label")
+
+-- Membuat Dropdown
+MainTab:CreateDropdown({
+    Name = "Example Dropdown",
+    Options = {"Option 1", "Option 2", "Option 3"},
+    CurrentOption = "Option 1",
+    Flag = "ExampleDropdown",
+    Callback = function(option)
+        print("Selected option:", option)
+    end
+})
