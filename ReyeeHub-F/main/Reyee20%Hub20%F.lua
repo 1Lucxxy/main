@@ -90,6 +90,12 @@ local Scripts = {
         Callback = function()
             loadstring(game:HttpGet("https://pastefy.app/CZWxFoTG/raw"))()
         end
+    },
+    {
+        Name = "Ink Game",
+        Callback = function()
+            loadstring(game:HttpGet("https://officialaxscripts.vercel.app/scripts/AX-Loader.lua"))()
+        end
     }
 }
 
