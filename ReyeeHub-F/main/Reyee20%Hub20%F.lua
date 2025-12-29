@@ -62,9 +62,9 @@ local Scripts = {
         end
     },
     {
-        Name = "Forsaken",
+        Name = "LaggerSab",
         Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/34f3f/forsaken.github.io/refs/heads/main/ringtabublik.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/khelzzz/x/refs/heads/main/best-lagger"))() 
         end
     },
     {
