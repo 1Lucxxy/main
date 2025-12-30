@@ -12,7 +12,7 @@ getgenv()._AUTO_SCRIPT_LOADED = true
 
 player.CharacterAdded:Connect(function()
 	task.wait(1)
-	loadstring(game:HttpGet("https://pastebin.com/raw/REPLACE_THIS"))()
+	loadstring(game:HttpGet("https://raw.githubusercontent.com/1Lucxxy/Fayyxiee/refs/heads/main/Script-Games/main/autojump.lua"))()
 end)
 
 -------------------------------------------------
